@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ARCHWORD - Arrowstreet</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --bg: #020617;
+      --card: #0f172a;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --green: #22c55e;
+      --yellow: #eab308;
+      --gray: #374151;
+      --border: #1f2937;
+      --accent: #2563eb;
+      font-family: "Inter", system-ui, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top, #0f172a, #020617);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .app {
+      background: var(--card);
+      border-radius: 20px;
+      box-shadow: 0 30px 60px rgba(0,0,0,.6);
+      padding: 28px 30px 32px;
+      max-width: 450px;
+      width: 100%;
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0;
+      letter-spacing: 0.3em;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-bottom: 18px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-rows: repeat(6, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+    }
+
+    .cell {
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      background: #020617;
+    }
+
+    .correct { background: var(--green); border-color: var(--green); color: #052e16; }
+    .present { background: var(--yellow); border-color: var(--yellow); color: #422006; }
+    .absent { background: var(--gray); border-color: var(--gray); color: var(--text); }
+
+    .input-wrap {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    input[type=text] {
+      flex: 1;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 2px solid var(--border);
+      background: #020617;
+      color: var(--text);
+      font-size: 1rem;
+      text-transform: uppercase;
+    }
+
+    button {
+      border-radius: 12px;
+      border: none;
+      padding: 12px 16px;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button.secondary { background: #334155; }
+
+    .message { text-align: center; margin-top: 10px; min-height: 1.4em; }
+
+    .footer { text-align: center; margin-top: 14px; font-size: 0.8rem; color: var(--muted); }
+
+    .leaderboard {
+      margin-top: 20px;
+      text-align: left;
+      background: #111827;
+      border-radius: 12px;
+      padding: 12px;
+      max-height: 180px;
+      overflow-y: auto;
+      font-size: 0.9rem;
+    }
+
+    .leaderboard h2 {
+      margin: 0 0 8px;
+      color: var(--accent);
+      font-size: 1rem;
+      text-align: center;
+    }
+
+    .leaderboard ol { margin: 0; padding-left: 20px; }
+
+    .brand-logo {
+      display: block;
+      margin: 0 auto 12px;
+      width: 120px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/3/3f/Arrowstreet_logo.png" alt="Arrowstreet" class="brand-logo">
+    <h1>ARCHWORD</h1>
+    <div class="subtitle">Daily Architecture Word Challenge</div>
+
+    <div class="grid" id="grid"></div>
+
+    <div class="input-wrap">
+      <input id="guessInput" type="text" maxlength="5" placeholder="TYPE A WORD" />
+      <button onclick="submitGuess()">ENTER</button>
+    </div>
+
+    <div class="message" id="message"></div>
+
+    <div class="footer">
+      <button class="secondary" onclick="submitScore()">Submit Score</button><br/><br/>
+      © ARCHWORD - Arrowstreet
+    </div>
+
+    <div class="leaderboard" id="leaderboard">
+      <h2>Leaderboard</h2>
+      <ol id="lbList"><li>Loading top scores...</li></ol>
+    </div>
+  </div>
+
+<script>
+const WORDS = [
+  "ALIGN","ANGLE","ARCHI","AXIAL","BEAMS","BLOCK","BRACE","BRICK","BUILD","CANON",
+  "CODES","CROWN","CURVE","DOORS","DRAFT","EAVES","ENTRY","FLOOR","FORMS","FRAME",
+  "FRONT","GLASS","GRADE","GRIDS","HATCH","JOINT","LEVEL","LIGHT","MODEL","MORTA",
+  "NODES","PLANS","POINT","PORCH","RAILS","REBAR","ROOFS","ROOMS","SEAMS","SEATS",
+  "SHADE","SHEET","SILLS","SITEY","SKYLI","SLOPE","SPACE","STEEL","STEPS","STONE",
+  "STYLE","SURVE","TILES","TRACE","TRUSS","UNITS","URBAN","VAULT","VIEWS","WALLS",
+  "WIDTH","WINDOW","WOODS","ZONED","ZONES","FACADE","STACK","PANEL","PIVOT","PLUMB",
+  "RISER","SPANS","TOWER","CIVIL","LINER","COLOR","SECTION","DETAIL","COLUMN","BEVEL",
+  "SCALE","CIVIC","BRUTS","FORMS"
+];
+
+const startDate = new Date("2024-01-01");
+const today = new Date();
+const dayIndex = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+const answer = WORDS[dayIndex % WORDS.length];
+
+const grid = document.getElementById("grid");
+const input = document.getElementById("guessInput");
+const message = document.getElementById("message");
+const lbList = document.getElementById("lbList");
+
+let currentRow = 0;
+let gameOver = false;
+let emojiGrid = [];
+
+for (let r = 0; r < 6; r++) {
+  const row = document.createElement("div");
+  row.className = "row";
+  for (let c = 0; c < 5; c++) {
+    const cell = document.createElement("div");
+    cell.className = "cell";
+    row.appendChild(cell);
+  }
+  grid.appendChild(row);
+}
+
+function submitGuess() {
+  if (gameOver) return;
+  const guess = input.value.toUpperCase();
+  if (guess.length !== 5 || !WORDS.includes(guess)) {
+    message.textContent = "Enter a valid 5-letter architecture word";
+    return;
+  }
+
+  const row = grid.children[currentRow];
+  let rowEmoji = "";
+
+  [...guess].forEach((letter, i) => {
+    const cell = row.children[i];
+    cell.textContent = letter;
+    if (letter === answer[i]) {
+      cell.classList.add("correct"); rowEmoji += "🟩";
+    } else if (answer.includes(letter)) {
+      cell.classList.add("present"); rowEmoji += "🟨";
+    } else {
+      cell.classList.add("absent"); rowEmoji += "⬜";
+    }
+  });
+
+  emojiGrid.push(rowEmoji);
+
+  if (guess === answer) {
+    message.textContent = `Solved in ${currentRow + 1}/6!`;
+    gameOver = true;
+    localStorage.setItem("archwordPlayed", today.toDateString());
+    addToLeaderboard(currentRow + 1);
+  } else {
+    currentRow++;
+    input.value = "";
+    if (currentRow === 6) {
+      message.textContent = `Answer: ${answer}`;
+      gameOver = true;
+      localStorage.setItem("archwordPlayed", today.toDateString());
+      addToLeaderboard(6);
+    }
+  }
+}
+
+function submitScore() {
+  const scoreText = `ARCHWORD ${dayIndex}\n${emojiGrid.join("\n")}`;
+  navigator.clipboard.writeText(scoreText);
+  window.open("https://forms.office.com/r/T9xEK9tBTk", "_blank");
+}
+
+function addToLeaderboard(tries) {
+  let lb = JSON.parse(localStorage.getItem("archwordLeaderboard") || "[]");
+  lb.push({name: prompt("Enter your name for leaderboard"), score: tries, date: today.toDateString()});
+  lb.sort((a,b)=>a.score-b.score);
+  lb = lb.slice(0,10);
+  localStorage.setItem("archwordLeaderboard", JSON.stringify(lb));
+  renderLeaderboard(lb);
+}
+
+function renderLeaderboard(lb) {
+  lbList.innerHTML = lb.map(item => `<li>${item.name}: ${item.score} tries</li>`).join('');
+}
+
+// Load leaderboard on start
+const storedLB = JSON.parse(localStorage.getItem("archwordLeaderboard") || "[]");
+if (storedLB.length) renderLeaderboard(storedLB);
+
+if (localStorage.getItem("archwordPlayed") === today.toDateString()) {
+  message.textContent = "You already played today";
+  gameOver = true;
+}
+</script>
+</body>
+</html>
