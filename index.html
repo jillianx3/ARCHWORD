@@ -150,7 +150,7 @@
     <div class="grid" id="grid"></div>
 
     <div class="input-wrap">
-      <input id="guessInput" type="text" maxlength="5" placeholder="TYPE A WORD" />
+      <input id="guessInput" type="text" maxlength="5" placeholder="TYPE ANY 5-LETTER WORD" />
       <button onclick="submitGuess()">ENTER</button>
     </div>
 
@@ -208,8 +208,8 @@ for (let r = 0; r < 6; r++) {
 function submitGuess() {
   if (gameOver) return;
   const guess = input.value.toUpperCase();
-  if (guess.length !== 5 || !WORDS.includes(guess)) {
-    message.textContent = "Enter a valid 5-letter architecture word";
+  if (guess.length !== 5) {
+    message.textContent = "Enter any 5-letter word";
     return;
   }
 
